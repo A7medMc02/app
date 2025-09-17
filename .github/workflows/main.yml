@@ -1,0 +1,53 @@
+build-apk:
+  runs-on: ubuntu-latest
+
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+
+  - name: Install system dependencies for Linux
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y libcairo2-dev libgirepository1.0-dev libgirepository-2.0-dev ninja-build pkg-config cmake
+
+  - name: Setup Python ${{ env.PYTHON_VERSION }}
+    uses: actions/setup-python@v5
+    with:
+      python-version: ${{ env.PYTHON_VERSION }}
+
+  - name: Upgrade pip and setuptools
+    run: |
+      python -m pip install --upgrade pip setuptools wheel
+
+  - name: Install Python Dependencies
+    run: |
+      pip install -r requirements.txt
+      pip install flet  # تأكد من تثبيت flet بشكل صريح
+
+  - name: Check Flet Installation
+    run: |
+      flet --version
+
+  - name: Setup Flutter ${{ env.FLUTTER_VERSION }}
+    uses: subosito/flutter-action@v2
+    with:
+      flutter-version: ${{ env.FLUTTER_VERSION }}
+
+  - name: Setup Java JDK  # غيّر إلى JDK 17
+    uses: actions/setup-java@v4.2.1
+    with:
+      distribution: 'temurin'
+      java-version: '17'
+
+  - name: Flet Build APK
+    run: |
+      flutter config --no-analytics
+      flet build apk --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
+
+  - name: Upload APK Artifact
+    uses: actions/upload-artifact@v4.3.4
+    with:
+      name: apk-build-artifact
+      path: build/apk
+      if-no-files-found: warn
+      overwrite: false
